@@ -78,7 +78,19 @@ jobs:
         run: cosign attest --yes --predicate sbom.cdx.json --type cyclonedx ghcr.io/${{ github.repository_owner }}/webapp:latest
 
       - name: Verify image signature
-        run: cosign verify ghcr.io/${{ github.repository_owner }}/webapp:latest
+        run: |
+          cosign verify \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp "^https://github.com/${{ github.repository }}/.github/workflows/sbom.yml@refs/(heads/main|pull/.+)$" \
+            ghcr.io/${{ github.repository_owner }}/webapp:latest
+
+      - name: Verify SBOM attestation
+        run: |
+          cosign verify-attestation \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp "^https://github.com/${{ github.repository }}/.github/workflows/sbom.yml@refs/(heads/main|pull/.+)$" \
+            --type cyclonedx \
+            ghcr.io/${{ github.repository_owner }}/webapp:latest
 
   trivy-scan:
     name: Trivy Vulnerability Scan
